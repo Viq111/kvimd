@@ -6,9 +6,10 @@ import (
 
 // Define public errors
 var (
+	ErrFileTooBig  = errors.New("file size is too big (max 4Gb)")
 	ErrInvalidKey  = errors.New("key is not valid")
 	ErrKeyNotFound = errors.New("key was not found in database")
-	ErrFileTooBig  = errors.New("file size is too big (max 4Gb)")
+	ErrNoSpace     = errors.New("no space left in database") // What you usually want to do here is create a new file
 )
 
 const keySize = 16 // Maybe change it to DB scoped after to have it configurable
