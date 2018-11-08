@@ -36,7 +36,7 @@ func generateTestCase() testCase {
 	}
 }
 
-func TestWriteRead(t *testing.T) {
+func TestHashDiskWriteRead(t *testing.T) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "hashdisk")
 	require.NoError(t, err)
@@ -59,7 +59,7 @@ func TestWriteRead(t *testing.T) {
 	}
 }
 
-func TestCloseOpen(t *testing.T) {
+func TestHashDiskCloseOpen(t *testing.T) {
 	// Test that we correctly recover file after reopening
 	testCases := 100
 
@@ -95,7 +95,7 @@ func TestCloseOpen(t *testing.T) {
 	}
 }
 
-func BenchmarkWrite(b *testing.B) {
+func BenchmarkHashDiskWrite(b *testing.B) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "hashdisk")
 	require.NoError(b, err)
@@ -117,7 +117,7 @@ func BenchmarkWrite(b *testing.B) {
 	}
 }
 
-func BenchmarkRead(b *testing.B) {
+func BenchmarkHashDiskRead(b *testing.B) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "hashdisk")
 	require.NoError(b, err)

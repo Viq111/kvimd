@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"os"
+	"sync"
 
 	"github.com/DataDog/hyperloglog"
 	"github.com/edsrzf/mmap-go"
@@ -24,18 +25,18 @@ var (
 )
 
 // hashDisk represents a HashMap of constant key and value size.
-// It uses mmap internally.
+// It uses mmap internally. It is **NOT THREAD-SAFE** (you need to acquire hashDisk.Lock())
 // Currently uses linear probing and is a bit dumb
 // Possible improvements:
 //   - Use robin hood hashing instead of linear probling
 //   - Use type casting / whatever instead of bytes.Equal to find zero-value slice (5.81 ns/op vs 2.27 ns/op)
 type hashDisk struct {
+	sync.Mutex
 	MaxSize uint32 // Max number of items we can add into the hash. This is computed by the map itself
 
 	emptyValue   []byte
 	entries      uint32
 	entrySize    uint32
-	size         uint32
 	totalEntries uint32
 	file         *os.File
 	m            mmap.MMap
@@ -79,7 +80,6 @@ func newHashDisk(path string, size int64) (*hashDisk, error) {
 		emptyValue: make([]byte, keySize),
 		entries:    entries,
 		entrySize:  entrySize,
-		size:       uint32(size),
 		file:       f,
 		m:          m,
 	}, nil
