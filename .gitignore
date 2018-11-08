@@ -1,0 +1,7 @@
+# Go generated files
+*.profile
+*.out
+*.test
+
+# Disable vendoring for now
+vendor/
