@@ -25,7 +25,10 @@ var (
 
 // hashDisk represents a HashMap of constant key and value size.
 // It uses mmap internally.
-// Currently uses linear probing but might want to implement robin hood hashing
+// Currently uses linear probing and is a bit dumb
+// Possible improvements:
+//   - Use robin hood hashing instead of linear probling
+//   - Use type casting / whatever instead of bytes.Equal to find zero-value slice (5.81 ns/op vs 2.27 ns/op)
 type hashDisk struct {
 	MaxSize uint32 // Max number of items we can add into the hash. This is computed by the map itself
 
@@ -83,6 +86,9 @@ func newHashDisk(path string, size int64) (*hashDisk, error) {
 }
 
 func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
+	if bytes.Equal(value, h.emptyValue) {
+		return ErrInvalidKey
+	}
 	if h.totalEntries > h.MaxSize {
 		return ErrMaxHashSize
 	}
@@ -109,6 +115,9 @@ func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
 }
 
 func (h *hashDisk) Get(value []byte) (fileIndex, fileOffset uint32, err error) {
+	if bytes.Equal(value, h.emptyValue) {
+		return 0, 0, ErrInvalidKey
+	}
 	slot := hyperloglog.MurmurBytes(value) % h.entries
 	offset := slot * h.entrySize
 	for { // Try to find value or an empty slot
