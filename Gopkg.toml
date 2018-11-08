@@ -1,0 +1,23 @@
+[[constraint]]
+  branch = "master"
+  name = "github.com/DataDog/hyperloglog"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/dustin/randbo"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/edsrzf/mmap-go"
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.2.2"
+
+[prune]
+  go-tests = true
+  unused-packages = true
