@@ -2,12 +2,12 @@
 
 
 [[projects]]
-  branch = "master"
-  digest = "1:df967162652571c677ee5a844ce617af0c333294fc3b2f9c51944c0c881717c4"
+  branch = "viq111/murmur-bytes"
+  digest = "1:ece97ccbf526af0e80fe007e463a7382d8364526f529a5935e2cee75941489bc"
   name = "github.com/DataDog/hyperloglog"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ba0c351725b1485e65737b764a4f67e4428c338a"
+  revision = "c65d6edeab86635163992bf74989bf33310c6f56"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
