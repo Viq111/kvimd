@@ -13,11 +13,7 @@ import (
 
 const (
 	// maxLoad is the load after the one, we will not accept Set anymore
-	maxLoad = 0.7
-)
-
-var (
-	ErrMaxHashSize = errors.New("cannot insert more into hashmap")
+	maxLoad = 0.8
 )
 
 var (
@@ -31,7 +27,7 @@ var (
 //   - Use robin hood hashing instead of linear probling
 //   - Use type casting / whatever instead of bytes.Equal to find zero-value slice (5.81 ns/op vs 2.27 ns/op)
 type hashDisk struct {
-	sync.Mutex
+	sync.RWMutex
 	MaxSize uint32 // Max number of items we can add into the hash. This is computed by the map itself
 
 	emptyValue   []byte
@@ -85,12 +81,20 @@ func newHashDisk(path string, size int64) (*hashDisk, error) {
 	}, nil
 }
 
+// Load returns the load factor of the hashmap.
+// If accessed concurrently you need a read lock
+func (h *hashDisk) Load() float64 {
+	return float64(h.totalEntries) / float64(h.MaxSize)
+}
+
+// Set a given value that was stored in another database at fileIndex and fileOffset
+// If accessed concurrently you need a write lock
 func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
 	if bytes.Equal(value, h.emptyValue) {
 		return ErrInvalidKey
 	}
 	if h.totalEntries > h.MaxSize {
-		return ErrMaxHashSize
+		return ErrNoSpace
 	}
 	// Compute hash
 	slot := hyperloglog.MurmurBytes(value) % h.entries
@@ -114,6 +118,8 @@ func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
 	return nil
 }
 
+// Get the location of a value. If the value is not found, return a ErrKeyNotFound
+// If accessed concurrently you need a read lock
 func (h *hashDisk) Get(value []byte) (fileIndex, fileOffset uint32, err error) {
 	if bytes.Equal(value, h.emptyValue) {
 		return 0, 0, ErrInvalidKey
@@ -136,6 +142,8 @@ func (h *hashDisk) Get(value []byte) (fileIndex, fileOffset uint32, err error) {
 	}
 }
 
+// Close the database. It is not safe to call any Set or Get after calling Close
+// Flushes all the data to disk
 func (h *hashDisk) Close() error {
 	err1 := h.m.Unmap() // Flush mmap to the file
 	err2 := h.file.Close()
