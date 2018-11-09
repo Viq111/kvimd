@@ -199,7 +199,7 @@ func (d *DB) Write(key, value []byte) error {
 		return nil // We found the key already
 	}
 	if err != ErrKeyNotFound && err != nil {
-		return err // Something wrong happened
+		return errors.Wrap(err, "failed to find key")
 	}
 
 	// Then write to valuesDisk DB
@@ -212,7 +212,7 @@ func (d *DB) Write(key, value []byte) error {
 	offset, err := d.openValuesDisk[index].Set(value)
 	d.openValuesDiskMutex.RUnlock()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to write to ValuesDisk")
 	}
 
 	// Then insert into hashDisk DB
@@ -226,7 +226,7 @@ func (d *DB) Write(key, value []byte) error {
 	err = dbHash.Set(key, index, offset)
 	dbHash.Unlock()
 	d.openHashDiskMutex.RUnlock()
-	return err
+	return errors.Wrap(err, "failed to write to HashDisk")
 }
 
 // Close the database, flushing all pending operations to disk.
@@ -271,7 +271,8 @@ func (d *DB) rotate() error {
 	if load > rotateHashDiskMaxLoad {
 		// We need to rotate
 		fmt.Println("kvimd: HashDisk database is full, creating a new one")
-		path := createHashDiskPath(uint32(nbDBs))
+		file := createHashDiskPath(uint32(nbDBs))
+		path := filepath.Join(d.RootPath, file)
 		newDB, err := newHashDisk(path, int64(d.fileSize))
 		if err != nil {
 			return err
@@ -294,7 +295,8 @@ func (d *DB) rotate() error {
 		// We need to rotate
 		fmt.Println("kvimd: ValuesDisk database is full, creating a new one")
 		index++
-		path := createValuesDiskPath(index)
+		file := createValuesDiskPath(index)
+		path := filepath.Join(d.RootPath, file)
 		db, err := newValuesDisk(path, d.fileSize, index)
 		if err != nil {
 			return err
