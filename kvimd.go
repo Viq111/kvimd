@@ -169,8 +169,18 @@ func (d *DB) findKey(key []byte) (fileIndex, fileOffset uint32, err error) {
 // Read a value for a given key from the database. If error is nil then value is returned
 // Return ErrKeyNotFound if key doesn't exist. Return any non-nil error on other errors
 func (d *DB) Read(key []byte) ([]byte, error) {
-	// ToDo
-	return nil, nil
+	fileIndex, fileOffset, err := d.findKey(key)
+	if err != nil {
+		return nil, err
+	}
+	d.openValuesDiskMutex.RLock()
+	if len(d.openValuesDisk) == 0 {
+		d.openValuesDiskMutex.RUnlock()
+		return nil, ErrDBClosed
+	}
+	value, err := d.openValuesDisk[fileIndex].Get(fileOffset)
+	d.openValuesDiskMutex.RUnlock()
+	return value, err
 }
 
 // Write a value for a given key in the database. If write succeed, returned error is nil
