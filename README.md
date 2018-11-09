@@ -1,6 +1,7 @@
 # kvimd
 
 kvimd - KV IM-mutable D-atabase
+
 A (fast) disk K/V store for immutable data
 
 # Requirements
@@ -16,13 +17,13 @@ For a given root path of `/kvimd_db/`:
 - `/kvimd_db/db#.hashdisk` is a disk hashmap mapping key -> (`valuesDisk` file id, offset in file)
 - `/kvimd_db/db#.valuesdisk` is the file containing the values. (Seeking with offset, you get back a value)
 
-## `db#.hashdisk`
+### `db#.hashdisk`
 
 It is a non-sparse file where all values are encoded as follow:
 - On write, we ask the DB to reserve us space of `len(value)` + size of the varint to encode the value
 - The data is written as `length_as_varint + data`. We use `uint32` for this file (so file max of 4Gb) so the varint can be up to 5 bytes
 
-## `db#.valuesdisk`
+### `db#.valuesdisk`
 
 It is a sparse disk file that is mmapped.
 A cell is of size `len(key) + 4 + 4` (4 for `uint32` which is the `valuesDisk` file id + 4 for `uint32` which is the offset in that file)
