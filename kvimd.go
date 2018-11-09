@@ -1,11 +1,20 @@
 package kvimd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
+)
+
+const keySize = 16 // Maybe change it to DB scoped after to have it configurable
+
+const (
+	rotateHashDiskMaxLoad   = 0.7 // Load factor at which point rotate will create a new HashDisk
+	rotateValuesDiskMaxLoad = 0.9 // % of file usage at which point rotate will create a new ValuesDisk
 )
 
 // Define public errors
@@ -16,8 +25,6 @@ var (
 	ErrKeyNotFound = errors.New("key was not found in database")
 	ErrNoSpace     = errors.New("no space left in database") // What you usually want to do here is create a new file
 )
-
-const keySize = 16 // Maybe change it to DB scoped after to have it configurable
 
 // DB is a kvimd database.
 // It uses uint32 in a lot of places so this means: each hashmap file is max 4Gb; you can store max 4Gb*4Gb/workers values (a lot)
@@ -116,14 +123,24 @@ func NewDB(root string, fileSize uint32) (*DB, error) {
 		openValuesDisk[0] = vd
 	}
 
-	return &DB{
+	db := &DB{
 		RootPath: root,
 		fileSize: fileSize,
 
 		openHashDisk:           openHashDisk,
 		openValuesDisk:         openValuesDisk,
 		currentValuesDiskIndex: maxValuesDiskIndex,
-	}, nil
+	}
+	go func() {
+		ticker := time.NewTicker(2 * time.Second)
+		for range ticker.C {
+			err := db.rotate()
+			if err != nil {
+				fmt.Printf("failed to create new databases: %s\n", err)
+			}
+		}
+	}()
+	return db, nil
 }
 
 // findKey tries to find and return the value in HashDisk of the key
@@ -223,6 +240,49 @@ func (d *DB) Close() error {
 // rotate rotates databases when needed:
 //   - rotates HashDisk when load factor is high (and we will soon disallow writes)
 //   - rotates ValuesDisk when offset is near the max size
-func (d *DB) rotate() {
-	// ToDo
+func (d *DB) rotate() error {
+	// First check HashDisk
+	d.openHashDiskMutex.RLock()
+	if len(d.openHashDisk) == 0 {
+		d.openHashDiskMutex.RUnlock()
+		return ErrDBClosed
+	}
+	nbDBs := len(d.openHashDisk)
+	load := d.openHashDisk[nbDBs-1].Load()
+	d.openHashDiskMutex.RUnlock()
+	if load > rotateHashDiskMaxLoad {
+		// We need to rotate
+		path := createHashDiskPath(uint32(nbDBs))
+		newDB, err := newHashDisk(path, int64(d.fileSize))
+		if err != nil {
+			return err
+		}
+		d.openHashDiskMutex.Lock()
+		d.openHashDisk = append(d.openHashDisk, newDB)
+		d.openHashDiskMutex.Unlock()
+	}
+
+	// Then check ValuesDisk
+	d.openValuesDiskMutex.RLock()
+	if len(d.openValuesDisk) == 0 {
+		d.openValuesDiskMutex.RUnlock()
+		return ErrDBClosed
+	}
+	index := d.currentValuesDiskIndex
+	load = d.openValuesDisk[index].Load()
+	d.openValuesDiskMutex.RUnlock()
+	if load > rotateValuesDiskMaxLoad {
+		// We need to rotate
+		index++
+		path := createValuesDiskPath(index)
+		db, err := newValuesDisk(path, d.fileSize, index)
+		if err != nil {
+			return err
+		}
+		d.openValuesDiskMutex.Lock()
+		d.openValuesDisk[index] = db
+		d.currentValuesDiskIndex = index
+		d.openValuesDiskMutex.Unlock()
+	}
+	return nil
 }
