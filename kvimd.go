@@ -133,6 +133,15 @@ func NewDB(root string, fileSize uint32) (*DB, error) {
 		openValuesDisk:         openValuesDisk,
 		currentValuesDiskIndex: maxValuesDiskIndex,
 	}
+
+	// Since currently valuesDisk does not allow writing to the same file on reload, we need to force
+	// at least one rotation to create a new file
+	err = db.rotate()
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
 	go func() {
 		ticker := time.NewTicker(2 * time.Second)
 		for range ticker.C {
