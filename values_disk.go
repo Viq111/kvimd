@@ -65,6 +65,14 @@ func newValuesDisk(path string, size, fileIndex uint32) (*valuesDisk, error) {
 	}, nil
 }
 
+// Load returns the ratio of currently used space vs total available
+func (v *valuesDisk) Load() float64 {
+	index := atomic.LoadUint32(&v.index)
+	load := float64(index) / float64(v.MaxSize)
+	return load
+}
+
+// Set a new value on the valuesDisk DB
 func (v *valuesDisk) Set(value []byte) (uint32, error) {
 	length := make([]byte, binary.MaxVarintLen32)
 	n := binary.PutUvarint(length, uint64(len(value)))
@@ -82,6 +90,7 @@ func (v *valuesDisk) Set(value []byte) (uint32, error) {
 	return uint32(index), nil
 }
 
+// Get a value from offset. No check is made that you are querying the correct offset
 func (v *valuesDisk) Get(offset uint32) ([]byte, error) {
 	if offset >= v.MaxSize {
 		return nil, ErrNoSpace
@@ -95,6 +104,8 @@ func (v *valuesDisk) Get(offset uint32) ([]byte, error) {
 	return ret, nil
 }
 
+// Close flushes all the data back to disk.
+// It is not safe anymore to call any Get/Set after it has been closed
 func (v *valuesDisk) Close() error {
 	err1 := v.m.Unmap() // Flush mmap to the file
 	err2 := v.file.Close()
