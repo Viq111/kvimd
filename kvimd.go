@@ -14,8 +14,8 @@ import (
 const keySize = 16 // Maybe change it to DB scoped after to have it configurable
 
 const (
-	rotateHashDiskMaxLoad   = 0.7 // Load factor at which point rotate will create a new HashDisk
-	rotateValuesDiskMaxLoad = 0.9 // % of file usage at which point rotate will create a new ValuesDisk
+	rotateHashDiskMaxLoad   = 0.7  // Load factor at which point rotate will create a new HashDisk
+	rotateValuesDiskMaxLoad = 0.85 // % of file usage at which point rotate will create a new ValuesDisk
 )
 
 // Define public errors
