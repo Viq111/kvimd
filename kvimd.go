@@ -23,7 +23,7 @@ const keySize = 16 // Maybe change it to DB scoped after to have it configurable
 // It uses uint32 in a lot of places so this means: each hashmap file is max 4Gb; you can store max 4Gb*4Gb/workers values (a lot)
 type DB struct {
 	RootPath string
-	metadata *Metadata
+	fileSize uint32
 
 	// Current opened HashDisk DB. You should always write to the last one (openHashDisk[len-1])
 	// When looking up a value, you will need to look in each.
@@ -44,9 +44,6 @@ type DB struct {
 
 // NewDB returns a new kvimd database
 func NewDB(root string, fileSize uint32) (*DB, error) {
-	m := &Metadata{
-		hashSize: fileSize,
-	}
 	if fileSize >= 2<<31-1 {
 		return nil, ErrFileTooBig
 	}
@@ -121,7 +118,7 @@ func NewDB(root string, fileSize uint32) (*DB, error) {
 
 	return &DB{
 		RootPath: root,
-		metadata: m,
+		fileSize: fileSize,
 
 		openHashDisk:           openHashDisk,
 		openValuesDisk:         openValuesDisk,
