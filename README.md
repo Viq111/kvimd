@@ -40,4 +40,4 @@ For a given root path of `/kvimd_db/`:
 
 ## Main DB
 
-- [ ] Once we start being a bit full on any DB (close to max size), start creating a new file in the background then swap it
+- [ ] Check that if key size is given at DB creation and not const it's fine
