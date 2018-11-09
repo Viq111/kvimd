@@ -106,3 +106,95 @@ func TestKvimdCloseOpen(t *testing.T) {
 		require.Equal(t, test.Value, value)
 	}
 }
+
+func BenchmarkKvimdRandbo(b *testing.B) {
+	// Benchmark should to check how fast we can create a test case
+	b.SetBytes(keySize + 100)
+	for i := 0; i < b.N; i++ {
+		generateKvimdTest()
+	}
+}
+
+func BenchmarkKvimdWrite(b *testing.B) {
+	dir, err := ioutil.TempDir("", "kvimd")
+	require.NoError(b, err)
+	defer os.RemoveAll(dir)
+
+	db, err := NewDB(dir, benchFileSize)
+	require.NoError(b, err)
+	defer func() {
+		err = db.Close()
+		require.NoError(b, err)
+	}()
+
+	b.SetBytes(keySize + 100) // On average value size is ~100char (rand btw 0 & 200)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		test := generateKvimdTest()
+		err = db.Write(test.Key, test.Value)
+		if err != nil {
+			b.Fatalf("Failed to write err=%s", err)
+		}
+	}
+}
+
+func BenchmarkKvimdReadSame(b *testing.B) {
+	dir, err := ioutil.TempDir("", "kvimd")
+	require.NoError(b, err)
+	defer os.RemoveAll(dir)
+
+	db, err := NewDB(dir, benchFileSize)
+	require.NoError(b, err)
+	defer func() {
+		err = db.Close()
+		require.NoError(b, err)
+	}()
+
+	test := generateKvimdTest()
+	err = db.Write(test.Key, test.Value)
+	require.NoError(b, err)
+
+	b.SetBytes(int64(len(test.Key) + len(test.Value)))
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err = db.Read(test.Key)
+		if err != nil {
+			b.Fatalf("Failed to write err=%s", err)
+		}
+	}
+}
+
+func BenchmarkKvimdReadRandom(b *testing.B) {
+	dir, err := ioutil.TempDir("", "kvimd")
+	require.NoError(b, err)
+	defer os.RemoveAll(dir)
+
+	db, err := NewDB(dir, benchFileSize)
+	require.NoError(b, err)
+	defer func() {
+		err = db.Close()
+		require.NoError(b, err)
+	}()
+
+	b.SetBytes(keySize + 100) // On average value size is ~100char (rand btw 0 & 200)
+
+	testKeys := make([][]byte, b.N)
+	for i := 0; i < b.N; i++ {
+		test := generateKvimdTest()
+		testKeys[i] = test.Key
+		err = db.Write(test.Key, test.Value)
+		if err != nil {
+			b.Fatalf("Failed to write err=%s", err)
+		}
+	}
+
+	// This is the real test, reread what we just wrote
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err = db.Read(testKeys[i])
+		if err != nil {
+			b.Fatalf("Failed to write err=%s", err)
+		}
+	}
+}
