@@ -26,7 +26,9 @@ func TestValuesDiskSetGet(t *testing.T) {
 	for i := range tests {
 		l := rand.Intn(2000) // Size is between 0 & 2000
 		v := make([]byte, l)
-		randbo.Read(v)
+		if l > 0 {
+			randbo.Read(v)
+		}
 		tests[i] = v
 	}
 	tests[55] = []byte{} // I want to explicitly test a 0-length value
@@ -60,7 +62,9 @@ func TestValuesDiskOpenClose(t *testing.T) {
 	for i := range tests {
 		l := rand.Intn(2000) // Size is between 0 & 2000
 		v := make([]byte, l)
-		randbo.Read(v)
+		if l > 0 {
+			randbo.Read(v)
+		}
 		tests[i] = v
 	}
 	tests[55] = []byte{} // I want to explicitly test a 0-length value
