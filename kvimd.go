@@ -136,7 +136,7 @@ func NewDB(root string, fileSize uint32) (*DB, error) {
 		for range ticker.C {
 			err := db.rotate()
 			if err != nil {
-				fmt.Printf("failed to create new databases: %s\n", err)
+				fmt.Printf("kvimd: failed to create new databases: %s\n", err)
 			}
 		}
 	}()
@@ -262,6 +262,7 @@ func (d *DB) rotate() error {
 	d.openHashDiskMutex.RUnlock()
 	if load > rotateHashDiskMaxLoad {
 		// We need to rotate
+		fmt.Println("kvimd: HashDisk database is full, creating a new one")
 		path := createHashDiskPath(uint32(nbDBs))
 		newDB, err := newHashDisk(path, int64(d.fileSize))
 		if err != nil {
@@ -283,6 +284,7 @@ func (d *DB) rotate() error {
 	d.openValuesDiskMutex.RUnlock()
 	if load > rotateValuesDiskMaxLoad {
 		// We need to rotate
+		fmt.Println("kvimd: ValuesDisk database is full, creating a new one")
 		index++
 		path := createValuesDiskPath(index)
 		db, err := newValuesDisk(path, d.fileSize, index)
