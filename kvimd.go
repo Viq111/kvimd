@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,6 +32,7 @@ var (
 type DB struct {
 	RootPath string
 	fileSize uint32
+	closed   uint32 // Just a boolean to indicate whether the database is closed. > 0 means it's closed
 
 	// Current opened HashDisk DB. You should always write to the last one (openHashDisk[len-1])
 	// When looking up a value, you will need to look in each.
@@ -135,6 +137,11 @@ func NewDB(root string, fileSize uint32) (*DB, error) {
 		ticker := time.NewTicker(2 * time.Second)
 		for range ticker.C {
 			err := db.rotate()
+			closed := atomic.LoadUint32(&db.closed)
+			if closed > 0 {
+				// We are closed, stop goroutine and don't check the error (likely will be one)
+				return
+			}
 			if err != nil {
 				fmt.Printf("kvimd: failed to create new databases: %s\n", err)
 			}
@@ -225,6 +232,7 @@ func (d *DB) Write(key, value []byte) error {
 // Close the database, flushing all pending operations to disk.
 // It is not safe to call any Read or Write after a Close
 func (d *DB) Close() error {
+	atomic.StoreUint32(&d.closed, 1)
 	d.openHashDiskMutex.Lock()
 	defer d.openHashDiskMutex.Unlock()
 	d.openValuesDiskMutex.Lock()
