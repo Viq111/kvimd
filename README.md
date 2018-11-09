@@ -27,3 +27,17 @@ For a given root path of `/kvimd_db/`:
 
 
 
+# Improvements:
+
+## HashDisk
+
+- [ ] Use robin hood hashing instead of linear probling
+- [ ] Use type casting / whatever instead of bytes.Equal to find zero-value slice (5.81 ns/op vs 2.27 ns/op)
+
+## ValuesDisk
+
+- [ ] Do a dicotomy to know what offset to restart on (or read length). This is bc if we crash loop, we will create A LOT of (large) files
+
+## Main DB
+
+- [ ] Once we start being a bit full on any DB (close to max size), start creating a new file in the background then swap it
