@@ -86,6 +86,35 @@ func TestHashDiskCloseOpen(t *testing.T) {
 	}
 }
 
+func TestHashDiskLoad(t *testing.T) {
+	// Create DB
+	dir, err := ioutil.TempDir("", "hashdisk")
+	require.NoError(t, err)
+	defer os.RemoveAll(dir)
+	path := filepath.Join(dir, "test.hashdisk")
+
+	h, err := newHashDisk(path, testFileSize)
+	require.NoError(t, err)
+	defer h.Close()
+
+	// At the beginning the load is null (within 0.1%)
+	require.InDelta(t, 0, h.Load(), 0.001)
+
+	for i := 0; i < 100; i++ {
+		test := generateTestCase()
+		err = h.Set(test.Key, test.V1, test.V2)
+		require.NoError(t, err)
+
+		returnedA, returnedB, err := h.Get(test.Key)
+		require.NoError(t, err)
+		require.Equal(t, test.V1, returnedA)
+		require.Equal(t, test.V2, returnedB)
+	}
+
+	require.True(t, h.Load() > 0)
+	require.True(t, h.Load() < 0.1)
+}
+
 func BenchmarkHashDiskWrite(b *testing.B) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "hashdisk")
