@@ -9,16 +9,11 @@ A (fast) disk K/V store for immutable data
 - [x] Random access is as cheap as continuous access (disk == SSD/NVMe)
 - [x] Key size is constant
 
-Possible future additions:
-- [ ] There is a log of recent entries (for replay)
-
-
 # File structure
 
 For a given root path of `/kvimd_db/`:
-- `/kvimd_db/metadata` is a very small file that stores metadata about the database. Just a JSON
-- `/kvimd_db/hash.x` (where x is a number starting at 0) is the hashmap of key -> (values_id, offset)
-- `/kvimd_db/values.x` is the file containing the values. There are # of workers created per `hash.x` file
+- `/kvimd_db/db#.hashdisk` is the hashmap of key -> (valuesDisk file id, offset in file)
+- `/kvimd_db/db#.valuesdisk` is the file containing the values.
 
 ## `hash.x`
 
@@ -37,7 +32,11 @@ For a given root path of `/kvimd_db/`:
 ## ValuesDisk
 
 - [ ] Do a dicotomy to know what offset to restart on (or read length). This is bc if we crash loop, we will create A LOT of (large) files
+- [ ] Add test for `Load()`
 
 ## Main DB
 
 - [ ] Check that if key size is given at DB creation and not const it's fine
+- [ ] Add test for `rotate()`
+- [ ] There is a log of recent entries (for replay)
+- [ ] Possibility to snapshot / lock the database (then everything is appended to log instead)
