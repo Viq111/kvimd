@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrUnknownPattern = errors.New("unknow file pattern")
+	errUnknownPattern = errors.New("unknow file pattern")
 	hashDiskPattern   = regexp.MustCompile(`^db([0-9]+)\.hashdisk$`)
 	valuesDiskPattern = regexp.MustCompile(`^db([0-9]+)\.valuesdisk$`)
 )
@@ -56,7 +56,7 @@ func getDBNumber(path string) (int, error) {
 		}
 		return index, nil
 	}
-	return 0, ErrUnknownPattern
+	return 0, errUnknownPattern
 }
 
 func createHashDiskPath(index uint32) string {

@@ -1,4 +1,5 @@
 # kvimd
+[![Documentation](https://godoc.org/github.com/Viq111/kvimd?status.svg)](http://godoc.org/github.com/Viq111/kvimd)
 
 kvimd - KV IM-mutable D-atabase
 
