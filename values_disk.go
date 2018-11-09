@@ -76,11 +76,10 @@ func (v *valuesDisk) Set(value []byte) (uint32, error) {
 		// We cannot add a negative uint32 and there is no SubUint32 method so we leave it as is
 		return 0, ErrNoSpace // We will need to recreate a file
 	}
-	index := newIndex - uint32(addedSize) // This is the address reserved to us
-	indexInt := int(index)
-	copy(v.m[indexInt:indexInt+len(length)], length)
-	copy(v.m[indexInt+len(length):indexInt+len(length)+len(value)], value)
-	return index, nil
+	index := int64(newIndex) - int64(addedSize) // This is the address reserved to us
+	copy(v.m[index:index+int64(len(length))], length)
+	copy(v.m[index+int64(len(length)):index+int64(len(length)+len(value))], value)
+	return uint32(index), nil
 }
 
 func (v *valuesDisk) Get(offset uint32) ([]byte, error) {
