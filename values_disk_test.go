@@ -8,19 +8,17 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dustin/randbo"
 	"github.com/stretchr/testify/require"
 )
 
 func TestValuesDiskSetGet(t *testing.T) {
-	r := randbo.New()
 	// Create DB
 	dir, err := ioutil.TempDir("", "valuesdisk")
 	require.NoError(t, err)
-	defer os.Remove(dir)
+	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "test.valuesdisk")
 
-	v, err := newValuesDisk(path, testSize, 0)
+	v, err := newValuesDisk(path, testFileSize, 0)
 	require.NoError(t, err)
 	defer v.Close()
 
@@ -28,7 +26,7 @@ func TestValuesDiskSetGet(t *testing.T) {
 	for i := range tests {
 		l := rand.Intn(2000) // Size is between 0 & 2000
 		v := make([]byte, l)
-		r.Read(v)
+		randbo.Read(v)
 		tests[i] = v
 	}
 	tests[55] = []byte{} // I want to explicitly test a 0-length value
@@ -49,21 +47,20 @@ func TestValuesDiskSetGet(t *testing.T) {
 
 func TestValuesDiskOpenClose(t *testing.T) {
 	// Correctly check that we recover the data after closing/opening DB (and we can't insert anymore)
-	r := randbo.New()
 	// Create DB
 	dir, err := ioutil.TempDir("", "valuesdisk")
 	require.NoError(t, err)
-	defer os.Remove(dir)
+	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "test.valuesdisk")
 
-	v, err := newValuesDisk(path, testSize, 0)
+	v, err := newValuesDisk(path, testFileSize, 0)
 	require.NoError(t, err)
 
 	tests := make([][]byte, 100)
 	for i := range tests {
 		l := rand.Intn(2000) // Size is between 0 & 2000
 		v := make([]byte, l)
-		r.Read(v)
+		randbo.Read(v)
 		tests[i] = v
 	}
 	tests[55] = []byte{} // I want to explicitly test a 0-length value
@@ -77,7 +74,7 @@ func TestValuesDiskOpenClose(t *testing.T) {
 	// Close, reopen, verify
 	err = v.Close()
 	require.NoError(t, err)
-	v, err = newValuesDisk(path, testSize, 0)
+	v, err = newValuesDisk(path, testFileSize, 0)
 	require.NoError(t, err)
 	defer v.Close()
 
@@ -97,10 +94,10 @@ func BenchmarkValuesDiskSet(b *testing.B) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "valuesdisk")
 	require.NoError(b, err)
-	defer os.Remove(dir)
+	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "test.valuesdisk")
 
-	v, err := newValuesDisk(path, testSize, 0)
+	v, err := newValuesDisk(path, benchFileSize, 0)
 	if err != nil {
 		b.Fatalf("couldn't create the DB: %s", err)
 	}
@@ -111,7 +108,10 @@ func BenchmarkValuesDiskSet(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		binary.LittleEndian.PutUint64(value, uint64(i))
-		v.Set(value)
+		_, err := v.Set(value)
+		if err != nil {
+			b.Fatalf("failed to set, you probably need to lower your benchmarking time, err=%s", err)
+		}
 	}
 }
 
@@ -119,10 +119,10 @@ func BenchmarkValuesDiskGet(b *testing.B) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "valuesdisk")
 	require.NoError(b, err)
-	defer os.Remove(dir)
+	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "test.valuesdisk")
 
-	v, err := newValuesDisk(path, testSize, 0)
+	v, err := newValuesDisk(path, benchFileSize, 0)
 	if err != nil {
 		b.Fatalf("couldn't create the DB: %s", err)
 	}

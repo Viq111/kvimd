@@ -8,16 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dustin/randbo"
 	"github.com/stretchr/testify/require"
-)
-
-const (
-	testSize = 512 << 20 // 512Mb
-)
-
-var (
-	r = randbo.New()
 )
 
 type testCase struct {
@@ -28,7 +19,7 @@ type testCase struct {
 
 func generateTestCase() testCase {
 	val := make([]byte, keySize)
-	r.Read(val)
+	randbo.Read(val)
 	return testCase{
 		Key: val,
 		V1:  rand.Uint32(),
@@ -40,10 +31,10 @@ func TestHashDiskWriteRead(t *testing.T) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "hashdisk")
 	require.NoError(t, err)
-	defer os.Remove(dir)
+	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "test.hashdisk")
 
-	h, err := newHashDisk(path, testSize)
+	h, err := newHashDisk(path, testFileSize)
 	require.NoError(t, err)
 	defer h.Close()
 
@@ -66,10 +57,10 @@ func TestHashDiskCloseOpen(t *testing.T) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "hashdisk")
 	require.NoError(t, err)
-	defer os.Remove(dir)
+	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "test.hashdisk")
 
-	h, err := newHashDisk(path, testSize)
+	h, err := newHashDisk(path, testFileSize)
 	require.NoError(t, err)
 
 	tests := make([]testCase, testCases)
@@ -83,7 +74,7 @@ func TestHashDiskCloseOpen(t *testing.T) {
 	// Close and reopen
 	err = h.Close()
 	require.NoError(t, err)
-	h, err = newHashDisk(path, testSize)
+	h, err = newHashDisk(path, testFileSize)
 	require.NoError(t, err)
 	defer h.Close()
 
@@ -99,10 +90,10 @@ func BenchmarkHashDiskWrite(b *testing.B) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "hashdisk")
 	require.NoError(b, err)
-	defer os.Remove(dir)
+	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "test.hashdisk")
 
-	h, err := newHashDisk(path, testSize)
+	h, err := newHashDisk(path, benchFileSize)
 	if err != nil {
 		b.Fatalf("couldn't create the DB: %s", err)
 	}
@@ -121,10 +112,10 @@ func BenchmarkHashDiskRead(b *testing.B) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "hashdisk")
 	require.NoError(b, err)
-	defer os.Remove(dir)
+	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "test.hashdisk")
 
-	h, err := newHashDisk(path, testSize)
+	h, err := newHashDisk(path, benchFileSize)
 	if err != nil {
 		b.Fatalf("couldn't create the DB: %s", err)
 	}
