@@ -120,6 +120,11 @@ func BenchmarkKvimdWrite(b *testing.B) {
 	require.NoError(b, err)
 	defer os.RemoveAll(dir)
 
+	// We want to keep the database somewhere (i.e: to run other tests on it), create it there and don't delete at the end
+	if out := os.Getenv("KVIMD_OUTPUT_PATH"); out != "" {
+		dir = out
+	}
+
 	db, err := NewDB(dir, benchFileSize)
 	require.NoError(b, err)
 	defer func() {
