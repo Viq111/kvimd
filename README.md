@@ -1,5 +1,5 @@
 # kvimd
-[![Documentation](https://godoc.org/github.com/Viq111/kvimd?status.svg)](http://godoc.org/github.com/Viq111/kvimd)
+[![Documentation](https://godoc.org/github.com/Viq111/kvimd?status.svg)](http://godoc.org/github.com/Viq111/kvimd) [![Build Status](https://travis-ci.org/Viq111/kvimd.svg?branch=master)](https://travis-ci.org/Viq111/kvimd)
 
 kvimd - KV IM-mutable D-atabase
 
