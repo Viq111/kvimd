@@ -1,8 +1,8 @@
 language: go
 
 go:
-  - 1.10.x
-  - 1.11.x
+  - "1.11.x"
+  - stable
 
 os:
   - linux
@@ -11,4 +11,4 @@ os:
 script:
   - "go build"
   - "go test -v"
-  - "go test -run no_tests -benchtime 5s -bench ."
+  - "go test -run no_tests -bench ."
