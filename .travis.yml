@@ -8,6 +8,15 @@ os:
   - linux
   - osx
 
+matrix:
+  include:
+    name: "Benchmarks"
+    language: go
+    go: stable
+    os: linux
+    script:
+      - "bash ./.travis/benchmark.sh"
+
 script:
   - "go build"
   - "go test -v"
