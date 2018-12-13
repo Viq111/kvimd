@@ -1,9 +1,10 @@
 #!/bin/bash
 
 if [ "$TRAVIS_PULL_REQUEST" = "false" ]
+then
     echo "Skipping benchmarks, this is not a pull request"
     exit
-then
+
 fi
 
 # Get utilities
