@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 if [ "$TRAVIS_PULL_REQUEST" = "false" ]
 then
@@ -16,8 +17,8 @@ git reset --hard $TRAVIS_BRANCH
 time go test -run NoTests -bench . -count 5 > /tmp/master
 
 # Run benchmark against current branch
-echo "Running benchmarks on current branch PR ($TRAVIS_PULL_REQUEST_BRANCH)..."
-git reset --hard $TRAVIS_PULL_REQUEST_BRANCH
+echo "Running benchmarks on PR branch ($TRAVIS_PULL_REQUEST_BRANCH)..."
+git checkout $TRAVIS_PULL_REQUEST_BRANCH
 time go test -run NoTests -bench . -count 5 > /tmp/new
 
 echo "#########################################################"
