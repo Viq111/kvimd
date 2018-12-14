@@ -38,7 +38,7 @@ func TestHashDiskWriteRead(t *testing.T) {
 	require.NoError(t, err)
 	defer h.Close()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10000; i++ {
 		test := generateTestCase()
 		err = h.Set(test.Key, test.V1, test.V2)
 		require.NoError(t, err)
