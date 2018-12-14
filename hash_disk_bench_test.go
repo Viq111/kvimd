@@ -45,21 +45,24 @@ func benchmarkHashDiskSetWithLoad(t *testing.T, minLoad, maxLoad float64) {
 
 	// Generate keys until we are at minLoad
 	minItems := int(float64(benchFileSize/itemSize) * minLoad)
+	if minItems < 1 {
+		minItems = 1
+	}
+	maxItems := int(float64(benchFileSize/itemSize) * maxLoad)
 	value := make([]byte, keySize)
-	for i := 0; i < minItems; i++ {
+	for i := 1; i < minItems; i++ {
 		binary.LittleEndian.PutUint64(value, uint64(i))
 		h.Set(value, uint32(i), uint32(i)+3)
 	}
 
-	maxItems := int(float64(benchFileSize/itemSize)*maxLoad) - minItems
 	start := time.Now()
 	// Loop
-	for i := minItems; i < minItems+maxItems; i++ {
+	for i := minItems; i < maxItems; i++ {
 		binary.LittleEndian.PutUint64(value, uint64(i))
 		h.Set(value, uint32(i), uint32(i)+3)
 	}
 	elapsed := time.Now().Sub(start)
-	writeExtendedBenchResult(name, maxItems, elapsed, itemSize)
+	writeExtendedBenchResult(name, maxItems-minItems, elapsed, itemSize)
 }
 
 func TestExtendedBenchHashDiskSetLoad(t *testing.T) {
@@ -101,6 +104,9 @@ func benchmarkHashDiskGetWithLoad(t *testing.T, minLoad, maxLoad float64) {
 
 	// Generate keys until we are at maxLoad
 	minItems := int(float64(benchFileSize/itemSize) * minLoad)
+	if minItems < 1 {
+		minItems = 1
+	}
 	maxItems := int(float64(benchFileSize/itemSize) * maxLoad)
 	value := make([]byte, keySize)
 	for i := 1; i < maxItems; i++ {
