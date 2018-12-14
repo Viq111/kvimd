@@ -94,6 +94,30 @@ func TestValuesDiskOpenClose(t *testing.T) {
 	require.Equal(t, ErrNoSpace, err)
 }
 
+func TestValuesDiskLoad(t *testing.T) {
+	// Create DB
+	dir, err := ioutil.TempDir("", "valuesdisk")
+	require.NoError(t, err)
+	defer os.RemoveAll(dir)
+	path := filepath.Join(dir, "test.valuesdisk")
+
+	v, err := newValuesDisk(path, testFileSize, 0)
+	require.NoError(t, err)
+	defer v.Close()
+
+	expectedLoad := 0.2
+	totalWrites := int(expectedLoad / 100 * testFileSize)
+	for i := 0; i < totalWrites; i++ {
+		data := make([]byte, 100)
+		randbo.Read(data)
+		v.Set(data)
+	}
+	l := v.Load()
+	require.InDelta(t, expectedLoad, l, 0.01, "Load %v is different than expected %v", l, expectedLoad)
+	// 2 load calls should be the same
+	require.InDelta(t, l, v.Load(), 0.01)
+}
+
 func BenchmarkValuesDiskSet(b *testing.B) {
 	// Create DB
 	dir, err := ioutil.TempDir("", "valuesdisk")

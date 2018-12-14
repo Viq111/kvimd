@@ -68,11 +68,21 @@ func NewDB(root string, fileSize uint32) (*DB, error) {
 	}
 
 	openHashDisk := make([]*hashDisk, len(files))
+	closeAllOpenHashDisk := func() {
+		for _, h := range openHashDisk {
+			if h == nil {
+				// Done closing all
+				return
+			}
+			h.Close()
+		}
+	}
+
 	for i, f := range files {
 		p := filepath.Join(root, f)
 		hd, err := newHashDisk(p, int64(fileSize))
 		if err != nil {
-			// ToDo: close all previous DBs
+			closeAllOpenHashDisk()
 			return nil, errors.Wrap(err, "failed to open HashDisk database")
 		}
 		openHashDisk[i] = hd
@@ -91,15 +101,24 @@ func NewDB(root string, fileSize uint32) (*DB, error) {
 	// Load all ValuesDisk databases
 	files, err = listFiles(root, valuesDiskPattern)
 	if err != nil {
+		closeAllOpenHashDisk()
 		return nil, errors.Wrap(err, "failed to list directory")
 	}
 
 	openValuesDisk := make(map[uint32]*valuesDisk)
+	closeAllOpenValuesDisk := func() {
+		for _, v := range openValuesDisk {
+			v.Close()
+		}
+	}
+
 	maxValuesDiskIndex := uint32(0)
 	for i, f := range files {
 		// Try to find the highest index
 		index, err := getDBNumber(f)
 		if err != nil {
+			closeAllOpenHashDisk()
+			closeAllOpenValuesDisk()
 			return nil, err
 		}
 		if uint32(index) > maxValuesDiskIndex {
@@ -109,7 +128,8 @@ func NewDB(root string, fileSize uint32) (*DB, error) {
 		p := filepath.Join(root, f)
 		vd, err := newValuesDisk(p, fileSize, uint32(index))
 		if err != nil {
-			// ToDo: close all previous DBs
+			closeAllOpenHashDisk()
+			closeAllOpenValuesDisk()
 			return nil, errors.Wrap(err, "failed to open ValuesDisk database")
 		}
 		openValuesDisk[uint32(i)] = vd
@@ -117,9 +137,11 @@ func NewDB(root string, fileSize uint32) (*DB, error) {
 
 	// If there are none, create 1
 	if len(openValuesDisk) == 0 {
-		p := filepath.Join(root, "db0.valuesdisk")
+		p := filepath.Join(root, createValuesDiskPath(0))
 		vd, err := newValuesDisk(p, fileSize, 0)
 		if err != nil {
+			closeAllOpenHashDisk()
+			closeAllOpenValuesDisk()
 			return nil, errors.Wrap(err, "failed to open ValuesDisk database")
 		}
 		openValuesDisk[0] = vd
