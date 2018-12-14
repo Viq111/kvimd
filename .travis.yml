@@ -10,12 +10,18 @@ os:
 
 matrix:
   include:
-    name: "Benchmarks"
+  - name: "Benchmarks"
     language: go
     go: stable
     os: linux
     script:
       - "bash ./.travis/benchmark.sh"
+  - name: "Benchmarks extended"
+    language: go
+    go: stable
+    os: linux
+    script:
+      - "bash ./.travis/benchmark_extended.sh"
 
 script:
   - "go build"
