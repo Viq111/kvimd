@@ -22,10 +22,6 @@ var (
 
 // hashDisk represents a HashMap of constant key and value size.
 // It uses mmap internally. It is **NOT THREAD-SAFE** (you need to acquire hashDisk.Lock())
-// Currently uses linear probing and is a bit dumb
-// Possible improvements:
-//   - Use robin hood hashing instead of linear probling
-//   - Use type casting / whatever instead of bytes.Equal to find zero-value slice (5.81 ns/op vs 2.27 ns/op)
 type hashDisk struct {
 	sync.RWMutex
 	MaxSize uint32 // Max number of items we can add into the hash. This is computed by the map itself
@@ -93,14 +89,24 @@ func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
 	if bytes.Equal(value, h.emptyValue) {
 		return ErrInvalidKey
 	}
-	if h.totalEntries > h.MaxSize {
+	if h.totalEntries >= h.MaxSize {
 		return ErrNoSpace
 	}
+	newEntry := true
 	// Compute hash
 	slot := hyperloglog.MurmurBytes(value) % h.entries
 	offset := slot * h.entrySize
 	for { // Try to find an empty slot
 		slotValue := h.m[offset : offset+keySize]
+		if bytes.Equal(slotValue, value) {
+			// Found same key, override
+			// ToDo: Benchmark with / without a return.
+			// Since we are technically unmutable, we could just return
+			// Pros of break: we can override data
+			// Cons: May be a tiny bit more costly, benchmark
+			newEntry = false
+			break
+		}
 		if bytes.Equal(slotValue, h.emptyValue) {
 			// Found empty slot
 			break
@@ -114,7 +120,9 @@ func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
 	encoding.PutUint32(indexes[4:8], fileOffset)
 	copy(h.m[offset:offset+keySize], value)
 	copy(h.m[offset+keySize:offset+keySize+8], indexes)
-	h.totalEntries++
+	if newEntry {
+		h.totalEntries++
+	}
 	return nil
 }
 
