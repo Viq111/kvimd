@@ -23,4 +23,4 @@ time EXTENDED_BENCH_FILE=/tmp/master go test -timeout 0 -run TestExtendedBench -
 echo "#########################################################"
 echo "Results:"
 benchstat /tmp/master /tmp/new | tee /tmp/diff
-go run .travis/pr_commenter.go "Extended benchmarks" /tmp/diff
+go run $(pwd)/.travis/pr_commenter.go "Extended benchmarks" /tmp/diff
