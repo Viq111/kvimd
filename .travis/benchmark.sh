@@ -22,4 +22,5 @@ time go test -timeout 0 -run NoTests -bench . -count 5 > /tmp/master
 
 echo "#########################################################"
 echo "Results:"
-benchstat /tmp/master /tmp/new
+benchstat /tmp/master /tmp/new | tee /tmp/diff
+go run .travis/pr_commenter.go Benchmarks /tmp/diff
