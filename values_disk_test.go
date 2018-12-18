@@ -141,6 +141,7 @@ func BenchmarkValuesDiskSet(b *testing.B) {
 			b.Fatalf("failed to set, you probably need to lower your benchmarking time, err=%s", err)
 		}
 	}
+	b.StopTimer()
 }
 
 func BenchmarkValuesDiskGet(b *testing.B) {
@@ -168,4 +169,5 @@ func BenchmarkValuesDiskGet(b *testing.B) {
 	for i := 1; i < b.N; i++ {
 		v.Get(offset)
 	}
+	b.StopTimer()
 }
