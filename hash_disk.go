@@ -99,11 +99,8 @@ func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
 	for { // Try to find an empty slot
 		slotValue := h.m[offset : offset+keySize]
 		if bytes.Equal(slotValue, value) {
-			// Found same key, override
-			// ToDo: Benchmark with / without a return.
-			// Since we are technically unmutable, we could just return
-			// Pros of break: we can override data
-			// Cons: May be a tiny bit more costly, benchmark
+			// Found same key, override. We could just return instead but it was found in
+			// benchmarks that it hardly change anything at all so it's better to be able to override
 			newEntry = false
 			break
 		}
