@@ -128,12 +128,14 @@ func BenchmarkHashDiskWrite(b *testing.B) {
 	}
 	defer h.Close()
 
+	items := int(h.MaxSize - 1) // So we can make sure we never create a new file on benchmark
 	b.SetBytes(keySize + 8)
 	b.ResetTimer()
 	value := make([]byte, keySize)
 	for i := 0; i < b.N; i++ {
-		binary.LittleEndian.PutUint64(value, uint64(i))
-		h.Set(value, uint32(i), uint32(i)+3)
+		j := i % items
+		binary.LittleEndian.PutUint64(value, uint64(j))
+		h.Set(value, uint32(j), uint32(j)+3)
 	}
 }
 
@@ -150,11 +152,13 @@ func BenchmarkHashDiskRead(b *testing.B) {
 	}
 	defer h.Close()
 
+	items := int(h.MaxSize - 1) // So we can make sure we never create a new file on benchmark
 	b.SetBytes(keySize + 8)
 	b.ResetTimer()
 	value := make([]byte, keySize)
 	for i := 1; i < b.N; i++ {
-		binary.LittleEndian.PutUint64(value, uint64(i))
+		j := i % items
+		binary.LittleEndian.PutUint64(value, uint64(j))
 		_, _, err = h.Get(value)
 		if err != ErrKeyNotFound {
 			b.Fatalf("We should not have found any keys, err=%s", err)

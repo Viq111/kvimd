@@ -13,16 +13,16 @@ go get golang.org/x/perf/cmd/benchstat
 
 # Run benchmark against current branch
 export MERGE_COMMIT=$(git rev-parse HEAD)
-echo "Running benchmarks on PR branch ..."
-time go test -timeout 0 -run NoTests -bench . -count 5 > /tmp/new
+echo "Running extended benchmarks on PR branch ..."
+time EXTENDED_BENCH_FILE=/tmp/new go test -timeout 0 -run TestExtendedBench -v
 
 # Run bebchnark against master
 echo "Running benchmarks on $TRAVIS_BRANCH branch..."
 git reset --hard $TRAVIS_BRANCH
-time go test -timeout 0 -run NoTests -bench . -count 5 > /tmp/master
+time EXTENDED_BENCH_FILE=/tmp/master go test -timeout 0 -run TestExtendedBench -v
 
 git reset --hard $MERGE_COMMIT
 echo "#########################################################"
 echo "Results:"
 benchstat /tmp/master /tmp/new | tee /tmp/diff
-go run $(pwd)/.travis/pr_commenter.go Benchmarks /tmp/diff
+go run $(pwd)/.travis/pr_commenter.go "Extended benchmarks" /tmp/diff
