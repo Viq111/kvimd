@@ -107,6 +107,31 @@ func TestKvimdCloseOpen(t *testing.T) {
 	}
 }
 
+func TestKvimdWriteOnce(t *testing.T) {
+	// Setup
+	dir, err := ioutil.TempDir("", "kvimd")
+	require.NoError(t, err)
+	defer os.RemoveAll(dir)
+
+	db, err := NewDB(dir, testFileSize)
+	require.NoError(t, err)
+	defer func() {
+		err = db.Close()
+		require.NoError(t, err)
+	}()
+
+	// Test that we are actually immutable; i.e: that we don't rewrite a key
+	testCase := generateKvimdTest()
+	value2 := []byte("second")
+	err = db.Write(testCase.Key, testCase.Value)
+	require.NoError(t, err)
+	err = db.Write(testCase.Key, value2)
+	require.NoError(t, err)
+	result, err := db.Read(testCase.Key)
+	require.NoError(t, err)
+	require.Equal(t, result, testCase.Value)
+}
+
 func BenchmarkKvimdRandbo(b *testing.B) {
 	// Benchmark should to check how fast we can create a test case
 	b.SetBytes(keySize + 100)
