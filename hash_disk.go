@@ -99,7 +99,7 @@ func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
 		slotValue := h.m[offset : offset+keySize]
 		if bytes.Equal(slotValue, value) {
 			// Found same key, since we are immutable, just return
-			return
+			return nil
 		}
 		if bytes.Equal(slotValue, h.emptyValue) {
 			// Found empty slot
