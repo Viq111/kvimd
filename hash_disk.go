@@ -92,20 +92,14 @@ func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
 	if h.totalEntries >= h.MaxSize {
 		return ErrNoSpace
 	}
-	newEntry := true
 	// Compute hash
 	slot := hyperloglog.MurmurBytes(value) % h.entries
 	offset := slot * h.entrySize
 	for { // Try to find an empty slot
 		slotValue := h.m[offset : offset+keySize]
 		if bytes.Equal(slotValue, value) {
-			// Found same key, override
-			// ToDo: Benchmark with / without a return.
-			// Since we are technically unmutable, we could just return
-			// Pros of break: we can override data
-			// Cons: May be a tiny bit more costly, benchmark
-			newEntry = false
-			break
+			// Found same key, since we are immutable, just return
+			return
 		}
 		if bytes.Equal(slotValue, h.emptyValue) {
 			// Found empty slot
@@ -120,9 +114,7 @@ func (h *hashDisk) Set(value []byte, fileIndex, fileOffset uint32) error {
 	encoding.PutUint32(indexes[4:8], fileOffset)
 	copy(h.m[offset:offset+keySize], value)
 	copy(h.m[offset+keySize:offset+keySize+8], indexes)
-	if newEntry {
-		h.totalEntries++
-	}
+	h.totalEntries++
 	return nil
 }
 
