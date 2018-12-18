@@ -137,6 +137,7 @@ func BenchmarkHashDiskWrite(b *testing.B) {
 		binary.LittleEndian.PutUint64(value, uint64(j))
 		h.Set(value, uint32(j), uint32(j)+3)
 	}
+	b.StopTimer()
 }
 
 func BenchmarkHashDiskRead(b *testing.B) {
@@ -164,4 +165,5 @@ func BenchmarkHashDiskRead(b *testing.B) {
 			b.Fatalf("We should not have found any keys, err=%s", err)
 		}
 	}
+	b.StopTimer()
 }

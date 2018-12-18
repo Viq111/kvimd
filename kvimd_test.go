@@ -166,6 +166,7 @@ func BenchmarkKvimdWrite(b *testing.B) {
 			b.Fatalf("Failed to write err=%s", err)
 		}
 	}
+	b.StopTimer()
 }
 
 func BenchmarkKvimdReadSame(b *testing.B) {
@@ -193,6 +194,7 @@ func BenchmarkKvimdReadSame(b *testing.B) {
 			b.Fatalf("Failed to write err=%s", err)
 		}
 	}
+	b.StopTimer()
 }
 
 func BenchmarkKvimdReadRandom(b *testing.B) {
@@ -227,4 +229,5 @@ func BenchmarkKvimdReadRandom(b *testing.B) {
 			b.Fatalf("Failed to write err=%s", err)
 		}
 	}
+	b.StopTimer() // Because the defer are slow, stop here
 }
