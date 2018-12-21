@@ -242,6 +242,17 @@ func (d *DB) Write(key, value []byte) error {
 	index := d.currentValuesDiskIndex
 	offset, err := d.openValuesDisk[index].Set(value)
 	d.openValuesDiskMutex.RUnlock()
+	if err == ErrNoSpace {
+		// On failing because of space, force rotate & retry once
+		d.rotate()
+		d.openValuesDiskMutex.RLock()
+		if len(d.openValuesDisk) == 0 {
+			d.openValuesDiskMutex.RUnlock()
+			return ErrDBClosed
+		}
+		index = d.currentValuesDiskIndex
+		offset, err = d.openValuesDisk[index].Set(value)
+	}
 	if err != nil {
 		return errors.Wrap(err, "failed to write to ValuesDisk")
 	}
@@ -257,7 +268,24 @@ func (d *DB) Write(key, value []byte) error {
 	err = dbHash.Set(key, index, offset)
 	dbHash.Unlock()
 	d.openHashDiskMutex.RUnlock()
-	return errors.Wrap(err, "failed to write to HashDisk")
+	if err == ErrNoSpace {
+		// On failing because of space, force rotate & retry once
+		d.rotate()
+		d.openHashDiskMutex.RLock()
+		if len(d.openHashDisk) == 0 {
+			d.openHashDiskMutex.RUnlock()
+			return ErrDBClosed
+		}
+		dbHash := d.openHashDisk[len(d.openHashDisk)-1]
+		dbHash.Lock()
+		err = dbHash.Set(key, index, offset)
+		dbHash.Unlock()
+		d.openHashDiskMutex.RUnlock()
+	}
+	if err != nil {
+		return errors.Wrap(err, "failed to write to HashDisk")
+	}
+	return nil
 }
 
 // Close the database, flushing all pending operations to disk.
