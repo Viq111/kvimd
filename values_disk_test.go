@@ -119,20 +119,28 @@ func TestValuesDiskLoad(t *testing.T) {
 }
 
 func BenchmarkValuesDiskSet(b *testing.B) {
+	valueSize := 8
 	// Create DB
 	dir, err := ioutil.TempDir("", "valuesdisk")
 	require.NoError(b, err)
 	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "test.valuesdisk")
 
-	v, err := newValuesDisk(path, benchFileSize, 0)
+	size := benchFileSize
+	// Make sure that we don't want to write more that what we can.
+	// If we do, then increase the DB size
+	neededSize := int(float64(b.N*(valueSize+binary.MaxVarintLen32)) * 1.05)
+	if neededSize > size {
+		size = neededSize
+	}
+	v, err := newValuesDisk(path, uint32(size), 0)
 	if err != nil {
 		b.Fatalf("couldn't create the DB: %s", err)
 	}
 	defer v.Close()
 
-	value := make([]byte, 8)
-	b.SetBytes(8)
+	value := make([]byte, valueSize)
+	b.SetBytes(int64(valueSize))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		binary.LittleEndian.PutUint64(value, uint64(i))

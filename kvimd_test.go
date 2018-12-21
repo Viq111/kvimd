@@ -9,6 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	kvimdTestValueAvgSize = 100
+)
+
 type kvimdTestCase struct {
 	Key   []byte
 	Value []byte
@@ -17,7 +21,7 @@ type kvimdTestCase struct {
 func generateKvimdTest() kvimdTestCase {
 	key := make([]byte, keySize)
 	randbo.Read(key)
-	valueLen := rand.Intn(200) // Value length will be between 0 and 200
+	valueLen := rand.Intn(kvimdTestValueAvgSize * 2) // Value length will be between 0 and 2*Avg
 	value := make([]byte, valueLen)
 	if valueLen > 0 {
 		// randbo doesn't like that you read 0 value
@@ -134,7 +138,7 @@ func TestKvimdWriteOnce(t *testing.T) {
 
 func BenchmarkKvimdRandbo(b *testing.B) {
 	// Benchmark should to check how fast we can create a test case
-	b.SetBytes(keySize + 100)
+	b.SetBytes(keySize + kvimdTestValueAvgSize)
 	for i := 0; i < b.N; i++ {
 		generateKvimdTest()
 	}
@@ -157,7 +161,7 @@ func BenchmarkKvimdWrite(b *testing.B) {
 		require.NoError(b, err)
 	}()
 
-	b.SetBytes(keySize + 100) // On average value size is ~100char (rand btw 0 & 200)
+	b.SetBytes(keySize + kvimdTestValueAvgSize)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		test := generateKvimdTest()
@@ -185,7 +189,7 @@ func BenchmarkKvimdReadSame(b *testing.B) {
 	err = db.Write(test.Key, test.Value)
 	require.NoError(b, err)
 
-	b.SetBytes(int64(len(test.Key) + len(test.Value)))
+	b.SetBytes(keySize + kvimdTestValueAvgSize)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -209,7 +213,7 @@ func BenchmarkKvimdReadRandom(b *testing.B) {
 		require.NoError(b, err)
 	}()
 
-	b.SetBytes(keySize + 100) // On average value size is ~100char (rand btw 0 & 200)
+	b.SetBytes(keySize + kvimdTestValueAvgSize)
 
 	testKeys := make([][]byte, b.N)
 	for i := 0; i < b.N; i++ {
