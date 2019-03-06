@@ -48,7 +48,7 @@ func TestValuesDiskSetGet(t *testing.T) {
 }
 
 func TestValuesDiskOpenClose(t *testing.T) {
-	// Correctly check that we recover the data after closing/opening DB (and we can't insert anymore)
+	// Correctly check that we recover the data after closing/opening DB
 	// Create DB
 	dir, err := ioutil.TempDir("", "valuesdisk")
 	require.NoError(t, err)
@@ -82,16 +82,21 @@ func TestValuesDiskOpenClose(t *testing.T) {
 	require.NoError(t, err)
 	defer v.Close()
 
-	// Now read and verify
+	// Check that we can write to it after reopening by appending
+	postWriteValue := make([]byte, 53)
+	randbo.Read(postWriteValue)
+	postPosition, postErr := v.Set(postWriteValue)
+	require.NoError(t, postErr)
+	postWriteResult, err := v.Get(postPosition)
+	require.NoError(t, err)
+	require.Equal(t, postWriteValue, postWriteResult)
+
+	// Now read and verify that we didn't corrupt
 	for i, test := range tests {
 		val, err := v.Get(offsets[i])
 		require.NoError(t, err)
 		require.Equal(t, test, val)
 	}
-
-	// Currently check that we cannot write more
-	_, err = v.Set(tests[0])
-	require.Equal(t, ErrNoSpace, err)
 }
 
 func TestValuesDiskLoad(t *testing.T) {

@@ -25,6 +25,7 @@ var (
 	ErrInvalidKey  = errors.New("key is not valid")
 	ErrKeyNotFound = errors.New("key was not found in database")
 	ErrNoSpace     = errors.New("no space left in database") // What you usually want to do here is create a new file
+	ErrCorrupted   = errors.New("database seems corrupted")
 )
 
 // DB is a kvimd database.
