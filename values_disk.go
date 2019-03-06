@@ -2,6 +2,7 @@ package kvimd
 
 import (
 	"encoding/binary"
+	"math"
 	"os"
 	"sync/atomic"
 
@@ -24,7 +25,6 @@ type valuesDisk struct {
 }
 
 func newValuesDisk(path string, size, fileIndex uint32) (*valuesDisk, error) {
-	index := size // We consider for any non-new file that it is full already
 	// Open or create the file
 	f, err := os.OpenFile(path, os.O_RDWR, 0755)
 	if os.IsNotExist(err) {
@@ -37,7 +37,6 @@ func newValuesDisk(path string, size, fileIndex uint32) (*valuesDisk, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to resize file")
 		}
-		index = 0 // For a new file, we can write to it
 	} else if err != nil {
 		return nil, errors.Wrap(err, "failed to open file")
 	}
@@ -54,6 +53,24 @@ func newValuesDisk(path string, size, fileIndex uint32) (*valuesDisk, error) {
 	if err != nil {
 		f.Close()
 		return nil, errors.Wrap(err, "failed to mmap file")
+	}
+
+	// Now we will try to reset index to where we can start to append again
+	var index uint32
+	for index < size {
+		valueSize, varintSize := binary.Uvarint(m[index : index+binary.MaxVarintLen32])
+		if valueSize == 0 {
+			// We don't encode a size anymore, we can start appending now
+			break
+		}
+		if valueSize == math.MaxUint32 { // This is the zero value
+			index += uint32(varintSize) // Only need to skip the varint
+		} else {
+			index += uint32(varintSize) + uint32(valueSize)
+		}
+	}
+	if index >= size { // This should not happen
+		return nil, ErrCorrupted
 	}
 
 	return &valuesDisk{
@@ -73,9 +90,16 @@ func (v *valuesDisk) Load() float64 {
 }
 
 // Set a new value on the valuesDisk DB
+// Special case to encode a null value: the length will be == to math.MaxUint32
+// This will enable us to treat zero-size as the end of the file (and easily check corruption)
 func (v *valuesDisk) Set(value []byte) (uint32, error) {
 	length := make([]byte, binary.MaxVarintLen32)
-	n := binary.PutUvarint(length, uint64(len(value)))
+	valueLength := uint64(len(value))
+	if len(value) == 0 {
+		valueLength = uint64(math.MaxUint32)
+	}
+
+	n := binary.PutUvarint(length, valueLength)
 	length = length[:n]
 
 	addedSize := len(length) + len(value)
@@ -91,12 +115,19 @@ func (v *valuesDisk) Set(value []byte) (uint32, error) {
 }
 
 // Get a value from offset. No check is made that you are querying the correct offset
+// Special case to encode a null value: the length will be == to binary.MaxVarintLen32
+// This will enable us to treat zero-size as the end of the file (and easily check corruption)
 func (v *valuesDisk) Get(offset uint32) ([]byte, error) {
 	if offset >= v.MaxSize {
 		return nil, ErrNoSpace
 	}
 	offsetInt := int(offset)
 	valueSize, varintSize := binary.Uvarint(v.m[offset : offset+binary.MaxVarintLen32])
+	if valueSize == math.MaxUint32 {
+		// Special case for 0-value
+		ret := make([]byte, 0)
+		return ret, nil
+	}
 
 	ret := make([]byte, valueSize)
 	copy(ret, v.m[offsetInt+varintSize:offsetInt+varintSize+int(valueSize)])
